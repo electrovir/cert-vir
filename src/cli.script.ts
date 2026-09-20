@@ -30,7 +30,7 @@ const {command, args} = parseArgs(
 
 try {
     await runCertVirCli(command, args);
-    log.success('cert-vir complete.');
+    log.success(`cert-vir ${command} complete.`);
 } catch (error) {
     log.error(error);
 }

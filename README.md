@@ -20,7 +20,7 @@ npm i -g cert-vir
 
 -   `cert-vir root`: create a root certificate.
 -   `cert-vir leaf`: create a leaf certificate, signed by the root certificate.
--   `cert-vir trust`: trust the root certificate on this machine (macOS only).
+-   `sudo cert-vir trust`: trust the root certificate on this machine. (macOS only currently. Requires `sudo`.)
 
 Any missing value is prompted for. Pass it as a flag to skip its prompt:
 
