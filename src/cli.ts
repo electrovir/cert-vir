@@ -171,12 +171,15 @@ export const extractParams: Readonly<{
                 (await input({
                     message: 'Certificate file name, without its extension:',
                 })),
-            /** A certificate needs at least one alt name, so prompt when neither flag was given. */
-            domainNames:
-                domainNames.length || ipAddresses.length
-                    ? domainNames
-                    : await promptCommaSeparated('Domain names, comma separated:'),
-            ipAddresses,
+            ...(domainNames.length || ipAddresses.length
+                ? {
+                      domainNames,
+                      ipAddresses,
+                  }
+                : {
+                      domainNames: await promptCommaSeparated('Domain names, comma separated:'),
+                      ipAddresses: await promptCommaSeparated('IP addresses, comma separated:'),
+                  }),
             rootCertificationEncryptionPassword: await extractPassword(parsed),
         };
     },

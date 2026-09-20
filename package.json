@@ -1,6 +1,6 @@
 {
     "name": "cert-vir",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "A CLI / API for easily creating SSL certificates.",
     "keywords": [
         "cli",
