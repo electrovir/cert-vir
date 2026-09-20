@@ -1,0 +1,93 @@
+{
+    "name": "cert-vir",
+    "version": "0.0.1",
+    "description": "A CLI / API for easily creating SSL certificates.",
+    "keywords": [
+        "cli",
+        "ssl",
+        "certificate",
+        "https",
+        "vir"
+    ],
+    "homepage": "https://github.com/electrovir/cert-vir",
+    "bugs": {
+        "url": "https://github.com/electrovir/cert-vir/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/cert-vir.git"
+    },
+    "license": "(MIT OR CC0-1.0)",
+    "author": {
+        "name": "electrovir",
+        "url": "https://github.com/electrovir"
+    },
+    "sideEffects": false,
+    "type": "module",
+    "main": "src/index.ts",
+    "module": "src/index.ts",
+    "types": "src/index.ts",
+    "bin": {
+        "cert-vir": "dist/cli.script.js"
+    },
+    "scripts": {
+        "compile": "virmator compile",
+        "docs": "virmator docs",
+        "format": "virmator format",
+        "lint": "virmator lint fix",
+        "publish": "virmator publish npm run test:all",
+        "start": "tsx src/index.ts",
+        "test": "virmator test node",
+        "test:all": "npm run compile && runstorm --names tests,spelling,format,docs,deps,lint \"npm run test:coverage\" \"npm run test:spelling\" \"npm run test:format\" \"npm run test:docs\" \"npm run test:deps\" \"npm run test:lint\"",
+        "test:coverage": "npm run test coverage",
+        "test:deps": "virmator deps check",
+        "test:docs": "virmator docs check",
+        "test:format": "virmator format check",
+        "test:lint": "virmator lint",
+        "test:spelling": "virmator spellcheck",
+        "test:update": "npm run test update"
+    },
+    "dependencies": {
+        "@augment-vir/assert": "^32.2.4",
+        "@augment-vir/common": "^32.3.1",
+        "@augment-vir/node": "^32.3.1",
+        "@inquirer/prompts": "^8.7.2",
+        "cli-vir": "^1.0.5"
+    },
+    "devDependencies": {
+        "@augment-vir/test": "^32.2.4",
+        "@eslint/js": "10.0.1",
+        "@stylistic/eslint-plugin": "^5.10.0",
+        "@stylistic/eslint-plugin-ts": "^4.4.1",
+        "@types/node": "^26.5.1",
+        "@typescript-eslint/eslint-plugin": "^8.69.0",
+        "c8": "^12.0.0",
+        "cspell": "^10.2.2",
+        "dependency-cruiser": "^18.2.0",
+        "esbuild": "^0.28.2",
+        "eslint": "^10.10.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-jsdoc": "^64.3.6",
+        "eslint-plugin-playwright": "^2.11.0",
+        "eslint-plugin-prettier": "^5.5.6",
+        "eslint-plugin-sonarjs": "^4.2.0",
+        "eslint-plugin-unicorn": "^74.0.0",
+        "istanbul-smart-text-reporter": "^1.1.5",
+        "markdown-code-example-inserter": "^3.0.6",
+        "prettier": "3.3.3",
+        "prettier-plugin-interpolated-html-tags": "^2.0.2",
+        "prettier-plugin-jsdoc": "^1.8.1",
+        "prettier-plugin-multiline-arrays": "~4.1.11",
+        "prettier-plugin-organize-imports": "^4.3.0",
+        "prettier-plugin-packagejson": "^3.0.2",
+        "prettier-plugin-sort-json": "^4.2.0",
+        "prettier-plugin-toml": "^2.0.6",
+        "typedoc": "^0.28.20",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.69.0",
+        "virmator": "^14.36.3"
+    },
+    "engines": {
+        "node": ">=22"
+    }
+}
