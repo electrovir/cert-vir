@@ -14,4 +14,6 @@ export enum CertVirCommand {
     Leaf = 'leaf',
     /** Trust a root certificate. */
     Trust = 'trust',
+    /** List all root and leaf certificates in the certificates directory. */
+    List = 'list',
 }

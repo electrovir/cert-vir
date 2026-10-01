@@ -38,6 +38,39 @@ export type LeafCertificateConfigParams = {
 export type LeafCommandParams = LeafCertificateConfigParams & CommonCertificateCommandParams;
 
 /**
+ * Construct the paths to a leaf certificate's files.
+ *
+ * @category Internal
+ */
+export function getLeafCertificatePaths(
+    params: Readonly<Pick<LeafCommandParams, 'certificateFileName' | 'certificatesDirPath'>>,
+): {
+    leafCrtFilePath: string;
+    leafCsrFilePath: string;
+    leafKeyFilePath: string;
+} {
+    const leafCrtFilePath = join(
+        params.certificatesDirPath || defaultCertificatesDirPath,
+        replaceExtension({
+            newExtension: '.crt',
+            path: params.certificateFileName,
+        }),
+    );
+
+    return {
+        leafCrtFilePath,
+        leafCsrFilePath: replaceExtension({
+            newExtension: '.csr',
+            path: leafCrtFilePath,
+        }),
+        leafKeyFilePath: replaceExtension({
+            newExtension: '.key',
+            path: leafCrtFilePath,
+        }),
+    };
+}
+
+/**
  * Run the leaf command.
  *
  * @category Internal
@@ -55,21 +88,7 @@ export async function runLeafCertificateCommand(this: void, params: Readonly<Lea
     );
     await writeFileAndDir(configFilePath, configFileContents);
 
-    const leafCrtFilePath = join(
-        params.certificatesDirPath || defaultCertificatesDirPath,
-        replaceExtension({
-            newExtension: '.crt',
-            path: params.certificateFileName,
-        }),
-    );
-    const leafKeyFilePath = replaceExtension({
-        newExtension: '.key',
-        path: leafCrtFilePath,
-    });
-    const leafCsrFilePath = replaceExtension({
-        newExtension: '.csr',
-        path: leafCrtFilePath,
-    });
+    const {leafCrtFilePath, leafCsrFilePath, leafKeyFilePath} = getLeafCertificatePaths(params);
 
     await mkdir(dirname(leafCrtFilePath), {
         recursive: true,

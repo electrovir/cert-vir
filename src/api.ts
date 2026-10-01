@@ -1,6 +1,7 @@
 import {getObjectTypedKeys, type MaybePromise, type RequireExactlyOne} from '@augment-vir/common';
 import {CertVirCommand} from './command.js';
 import {runLeafCertificateCommand, type LeafCommandParams} from './commands/leaf.command.js';
+import {runListCertificatesCommand, type ListCommandParams} from './commands/list.command.js';
 import {runRootCertificateCommand, type RootCommandParams} from './commands/root.command.js';
 import {runTrustCertificateCommand, type TrustCommandParams} from './commands/trust.command.js';
 
@@ -40,6 +41,7 @@ const commandOperators: Readonly<{
     ) => MaybePromise<void>;
 }> = {
     [CertVirCommand.Leaf]: runLeafCertificateCommand,
+    [CertVirCommand.List]: runListCertificatesCommand,
     [CertVirCommand.Root]: runRootCertificateCommand,
     [CertVirCommand.Trust]: runTrustCertificateCommand,
 };
@@ -51,6 +53,7 @@ const commandOperators: Readonly<{
  */
 export type CommandParams = {
     [CertVirCommand.Leaf]: LeafCommandParams;
+    [CertVirCommand.List]: ListCommandParams;
     [CertVirCommand.Root]: RootCommandParams;
     [CertVirCommand.Trust]: TrustCommandParams;
 };

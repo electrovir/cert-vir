@@ -1,9 +1,12 @@
 import {check, checkWrap} from '@augment-vir/assert';
-import {type MaybePromise} from '@augment-vir/common';
-import {input, password} from '@inquirer/prompts';
+import {wrapInTry, type MaybePromise} from '@augment-vir/common';
+import {confirm, input, password} from '@inquirer/prompts';
 import {FlagRequirement, parseArgs, type ArgDefinitions, type ParseArgsParams} from 'cli-vir';
+import {stat} from 'node:fs/promises';
 import {runCertVir, type CommandParams} from './api.js';
 import {CertVirCommand} from './command.js';
+import {getRootCertificatePaths} from './commands/common.js';
+import {getLeafCertificatePaths} from './commands/leaf.command.js';
 
 /**
  * Run the raw interactive cert-vir CLI.
@@ -15,10 +18,84 @@ export async function runCertVirCli(
     args: ReadonlyArray<string>,
 ): Promise<void> {
     const params = await extractParams[command](args);
+    const existingCertificate = extractReplacedCertificate[command](params as any);
+
+    if (existingCertificate) {
+        await confirmReplacement(existingCertificate);
+    }
 
     await runCertVir({
         [command]: params,
     } as any);
+}
+
+/**
+ * The certificate that each command would write over, if it already exists. The commands themselves
+ * never check: the prompt lives here so that API consumers are never blocked on stdin.
+ *
+ * @category Internal
+ */
+export const extractReplacedCertificate: Readonly<{
+    [Command in CertVirCommand]: (params: Readonly<CommandParams[Command]>) =>
+        | {
+              crtFilePath: string;
+              extraWarning: string;
+          }
+        | undefined;
+}> = {
+    [CertVirCommand.Leaf](params) {
+        return {
+            crtFilePath: getLeafCertificatePaths(params).leafCrtFilePath,
+            extraWarning: 'Its key is kept, so this is a renewal.',
+        };
+    },
+    [CertVirCommand.List]() {
+        return undefined;
+    },
+    [CertVirCommand.Root](params) {
+        return {
+            crtFilePath: getRootCertificatePaths(params).rootCrtFilePath,
+            extraWarning: 'Every leaf certificate already signed by it becomes untrusted.',
+        };
+    },
+    [CertVirCommand.Trust]() {
+        return undefined;
+    },
+};
+
+async function confirmReplacement({
+    crtFilePath,
+    extraWarning,
+}: Readonly<{
+    crtFilePath: string;
+    extraWarning: string;
+}>) {
+    const certificateExists = await wrapInTry(
+        async () => {
+            await stat(crtFilePath);
+            return true;
+        },
+        {
+            fallbackValue: false,
+        },
+    );
+
+    if (!certificateExists) {
+        return;
+    }
+
+    const shouldReplace = await confirm({
+        default: false,
+        message: [
+            `'${crtFilePath}' already exists and will be replaced.`,
+            extraWarning,
+            'Continue?',
+        ].join(' '),
+    });
+
+    if (!shouldReplace) {
+        throw new Error(`Cancelled: '${crtFilePath}' was not replaced.`);
+    }
 }
 
 /**
@@ -181,6 +258,21 @@ export const extractParams: Readonly<{
                       ipAddresses: await promptCommaSeparated('IP addresses, comma separated:'),
                   }),
             rootCertificationEncryptionPassword: await extractPassword(parsed),
+        };
+    },
+    [CertVirCommand.List](args) {
+        const parsed = parseArgs(
+            args,
+            {
+                certificatesDirPath: commonArgDefinitions.certificatesDirPath,
+                rootCertificatesDirName: commonArgDefinitions.rootCertificatesDirName,
+            },
+            createParseArgsParams(CertVirCommand.List),
+        );
+
+        return {
+            certificatesDirPath: checkWrap.isString(parsed.certificatesDirPath),
+            rootCertificatesDirName: checkWrap.isString(parsed.rootCertificatesDirName),
         };
     },
     [CertVirCommand.Trust](args) {

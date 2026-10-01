@@ -21,6 +21,7 @@ npm i -g cert-vir
 -   `cert-vir root`: create a root certificate.
 -   `cert-vir leaf`: create a leaf certificate, signed by the root certificate.
 -   `sudo cert-vir trust`: trust the root certificate on this machine. (macOS only currently. Requires `sudo`.)
+-   `cert-vir list`: list every root and leaf certificate in the certificates directory.
 
 Any missing value is prompted for. Pass it as a flag to skip its prompt:
 
@@ -33,6 +34,8 @@ Run `cert-vir <command> --help` for all flags.
 Certificates are saved in `~/.config/cert-vir/` unless `--certificates-dir-path` is set.
 
 To renew a leaf certificate, run `cert-vir leaf` again with the same file name. Its key is kept.
+
+`root` and `leaf` prompt for confirmation before replacing a certificate that already exists.
 
 ### API
 

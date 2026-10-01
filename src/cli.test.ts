@@ -2,10 +2,10 @@
 import {assert, assertWrap} from '@augment-vir/assert';
 import {runShellCommand} from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {mkdir, mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {PassThrough} from 'node:stream';
-import {extractParams, runCertVirCli} from './cli.js';
+import {extractParams, extractReplacedCertificate, runCertVirCli} from './cli.js';
 import {CertVirCommand} from './command.js';
 import {notCommittedDirPath} from './file-paths.mock.js';
 
@@ -195,6 +195,28 @@ describe('extractParams', () => {
         );
     });
 
+    it('reads every list flag', async () => {
+        assert.deepEquals(
+            await extractParams[CertVirCommand.List]([
+                '--certificates-dir-path',
+                '/certs',
+                '--root-certificates-dir-name',
+                'authority',
+            ]),
+            {
+                certificatesDirPath: '/certs',
+                rootCertificatesDirName: 'authority',
+            },
+        );
+    });
+
+    it('never prompts the list command for anything', async () => {
+        assert.deepEquals(await extractParams[CertVirCommand.List]([]), {
+            certificatesDirPath: undefined,
+            rootCertificatesDirName: undefined,
+        });
+    });
+
     it('never asks the trust command for a password', async () => {
         assert.deepEquals(await extractParams[CertVirCommand.Trust]([]), {
             certificatesDirPath: undefined,
@@ -205,7 +227,105 @@ describe('extractParams', () => {
     });
 });
 
+describe('extractReplacedCertificate', () => {
+    it('points at the certificate each command overwrites', () => {
+        assert.deepEquals(
+            {
+                leaf: extractReplacedCertificate[CertVirCommand.Leaf]({
+                    certificateCommonName: 'localhost',
+                    certificateFileName: 'my-site',
+                    certificatesDirPath: '/certs',
+                    rootCertificationEncryptionPassword: '',
+                })?.crtFilePath,
+                list: extractReplacedCertificate[CertVirCommand.List]({}),
+                root: extractReplacedCertificate[CertVirCommand.Root]({
+                    certificatesDirPath: '/certs',
+                    rootCertificateCommonName: 'Test Root',
+                    rootCertificateOrganizationName: 'Test Org',
+                    rootCertificationEncryptionPassword: '',
+                })?.crtFilePath,
+                trust: extractReplacedCertificate[CertVirCommand.Trust]({
+                    rootCertificationEncryptionPassword: '',
+                }),
+            },
+            {
+                leaf: '/certs/my-site.crt',
+                list: undefined,
+                root: '/certs/root/rootCA.crt',
+                trust: undefined,
+            },
+        );
+    });
+});
+
 describe(runCertVirCli.name, () => {
+    it('refuses to replace an existing certificate when the prompt is declined', async () => {
+        const certificatesDirPath = await createUnencryptedRootCertificate();
+        const leafCrtFilePath = join(certificatesDirPath, 'cert-vir-cli-existing-leaf.crt');
+
+        await writeFile(leafCrtFilePath, 'already here');
+
+        try {
+            await assert.throws(
+                withPromptAnswers(['n'], async () => {
+                    return await runCertVirCli(CertVirCommand.Leaf, [
+                        '--certificates-dir-path',
+                        certificatesDirPath,
+                        '--certificate-common-name',
+                        'cli-test.example.com',
+                        '--certificate-file-name',
+                        'cert-vir-cli-existing-leaf',
+                        '--domain-names',
+                        'cli-test.example.com',
+                        '--root-certification-encryption-password',
+                        'unused-by-an-unencrypted-key',
+                    ]);
+                }),
+                {
+                    matchMessage: 'was not replaced',
+                },
+            );
+
+            assert.strictEquals(await readFile(leafCrtFilePath, 'utf8'), 'already here');
+        } finally {
+            await rm(certificatesDirPath, {
+                force: true,
+                recursive: true,
+            });
+        }
+    });
+
+    it('replaces an existing certificate once the prompt is accepted', async () => {
+        const certificatesDirPath = await createUnencryptedRootCertificate();
+        const leafCrtFilePath = join(certificatesDirPath, 'cert-vir-cli-replaced-leaf.crt');
+
+        await writeFile(leafCrtFilePath, 'already here');
+
+        try {
+            await withPromptAnswers(['y'], async () => {
+                return await runCertVirCli(CertVirCommand.Leaf, [
+                    '--certificates-dir-path',
+                    certificatesDirPath,
+                    '--certificate-common-name',
+                    'cli-test.example.com',
+                    '--certificate-file-name',
+                    'cert-vir-cli-replaced-leaf',
+                    '--domain-names',
+                    'cli-test.example.com',
+                    '--root-certification-encryption-password',
+                    'unused-by-an-unencrypted-key',
+                ]);
+            });
+
+            assert.isIn('BEGIN CERTIFICATE', await readFile(leafCrtFilePath, 'utf8'));
+        } finally {
+            await rm(certificatesDirPath, {
+                force: true,
+                recursive: true,
+            });
+        }
+    });
+
     it('signs a leaf certificate from parsed flags', async () => {
         const certificatesDirPath = await createUnencryptedRootCertificate();
 
